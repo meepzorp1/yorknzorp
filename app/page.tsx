@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import Link from "next/link";
 import gsap from "gsap";
 
@@ -48,6 +48,35 @@ export default function Home() {
   const collectRef = (element: HTMLElement | null) => {
     if (element) {
       elementsRef.current.add(element);
+    }
+  };
+
+  const [contactForm, setContactForm] = useState({
+    name: "",
+    email: "",
+    message: "",
+  });
+  const [contactStatus, setContactStatus] = useState<
+    "idle" | "sending" | "sent" | "error"
+  >("idle");
+
+  const handleContactSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setContactStatus("sending");
+
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(contactForm),
+      });
+
+      if (!res.ok) throw new Error("Request failed");
+
+      setContactStatus("sent");
+      setContactForm({ name: "", email: "", message: "" });
+    } catch {
+      setContactStatus("error");
     }
   };
 
@@ -472,6 +501,85 @@ useEffect(() => {
             interesting technical problems, and opportunities where I can keep
             building useful things.
           </p>
+
+          <form
+            ref={collectRef}
+            data-gsap="contact-form"
+            onSubmit={handleContactSubmit}
+            className="mt-10 max-w-md space-y-4"
+          >
+            <div>
+              <label htmlFor="contact-name" className="sr-only">
+                Name
+              </label>
+              <input
+                id="contact-name"
+                type="text"
+                required
+                placeholder="Name"
+                value={contactForm.name}
+                onChange={(e) =>
+                  setContactForm((f) => ({ ...f, name: e.target.value }))
+                }
+                className="w-full rounded-xl border border-zinc-800 bg-zinc-900/60 px-4 py-3 text-zinc-100 placeholder:text-zinc-500 outline-none focus:border-zinc-500"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="contact-email" className="sr-only">
+                Email
+              </label>
+              <input
+                id="contact-email"
+                type="email"
+                required
+                placeholder="Email"
+                value={contactForm.email}
+                onChange={(e) =>
+                  setContactForm((f) => ({ ...f, email: e.target.value }))
+                }
+                className="w-full rounded-xl border border-zinc-800 bg-zinc-900/60 px-4 py-3 text-zinc-100 placeholder:text-zinc-500 outline-none focus:border-zinc-500"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="contact-message" className="sr-only">
+                Message
+              </label>
+              <textarea
+                id="contact-message"
+                required
+                rows={5}
+                placeholder="What are you building?"
+                value={contactForm.message}
+                onChange={(e) =>
+                  setContactForm((f) => ({ ...f, message: e.target.value }))
+                }
+                className="w-full resize-none rounded-xl border border-zinc-800 bg-zinc-900/60 px-4 py-3 text-zinc-100 placeholder:text-zinc-500 outline-none focus:border-zinc-500"
+              />
+            </div>
+
+            <div className="flex items-center gap-4">
+              <button
+                type="submit"
+                disabled={contactStatus === "sending"}
+                className="rounded-full bg-zinc-100 px-6 py-3 font-medium text-zinc-950 transition-all duration-300 hover:-translate-y-0.5 hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {contactStatus === "sending" ? "Sending..." : "Send message"}
+              </button>
+
+              {contactStatus === "sent" && (
+                <p className="text-sm text-emerald-400">
+                  Thanks — I&apos;ll get back to you soon.
+                </p>
+              )}
+              {contactStatus === "error" && (
+                <p className="text-sm text-red-400">
+                  Something went wrong. Try again, or email me directly.
+                </p>
+              )}
+            </div>
+          </form>
 
           <div
             ref={collectRef}
